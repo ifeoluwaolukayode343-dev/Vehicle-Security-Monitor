@@ -4,13 +4,15 @@ from app.models.event import SecurityEvent
 from app.services.event_logger import EventLogger
 from app.services.risk_engine import RiskEngine
 from app.services.security_engine import SecurityEngine
-
+from app.database.database import initialize_database
 
 app = FastAPI(
     title="Vehicle Security Monitor",
     description="Cybersecurity monitoring API for vehicle security events.",
     version="1.0.0",
 )
+
+initialize_database()
 
 security_engine = SecurityEngine()
 risk_engine = RiskEngine()

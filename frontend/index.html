@@ -1,0 +1,753 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Vehicle Security Monitor</title>
+
+    <style>
+        :root {
+            --bg: #0b1120;
+            --panel: #131d30;
+            --border: #26344b;
+            --text: #edf2f7;
+            --muted: #93a4ba;
+            --green: #34d399;
+            --red: #fb7185;
+            --orange: #fb923c;
+            --yellow: #facc15;
+            --blue: #60a5fa;
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            background: var(--bg);
+            color: var(--text);
+            font-family: Arial, Helvetica, sans-serif;
+        }
+
+        header {
+            padding: 24px 5%;
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 16px;
+            flex-wrap: wrap;
+        }
+
+        h1 {
+            margin: 0;
+            font-size: clamp(21px, 3vw, 30px);
+        }
+
+        header p {
+            color: var(--muted);
+            margin: 8px 0 0;
+        }
+
+        .status {
+            padding: 9px 14px;
+            border-radius: 30px;
+            background: #12382f;
+            color: var(--green);
+            font-size: 13px;
+            font-weight: bold;
+        }
+
+        main {
+            width: min(1400px, 92%);
+            margin: 28px auto;
+        }
+
+        .section-heading {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 12px;
+            flex-wrap: wrap;
+            margin: 30px 0 16px;
+        }
+
+        h2 {
+            font-size: 19px;
+            margin: 0;
+        }
+
+        .metrics {
+            display: grid;
+            grid-template-columns: repeat(5, minmax(0, 1fr));
+            gap: 15px;
+        }
+
+        .panel, .metric {
+            background: var(--panel);
+            border: 1px solid var(--border);
+            border-radius: 14px;
+        }
+
+        .metric {
+            padding: 20px;
+        }
+
+        .metric-label {
+            color: var(--muted);
+            font-size: 13px;
+        }
+
+        .metric-value {
+            font-size: 30px;
+            font-weight: bold;
+            margin-top: 12px;
+        }
+
+        .critical { color: var(--red); }
+        .high { color: var(--orange); }
+        .medium { color: var(--yellow); }
+        .low { color: var(--green); }
+
+        .panel {
+            padding: 20px;
+        }
+
+        .filters {
+            display: grid;
+            grid-template-columns: 1fr 1fr auto;
+            gap: 12px;
+            align-items: end;
+        }
+
+        label {
+            display: block;
+            font-size: 13px;
+            color: var(--muted);
+            margin-bottom: 8px;
+        }
+
+        input, select, textarea {
+            width: 100%;
+            background: #0b1425;
+            border: 1px solid var(--border);
+            color: var(--text);
+            border-radius: 8px;
+            padding: 12px;
+            font: inherit;
+        }
+
+        textarea {
+            min-height: 90px;
+            resize: vertical;
+        }
+
+        button {
+            border: 0;
+            border-radius: 8px;
+            padding: 12px 17px;
+            background: #2563eb;
+            color: white;
+            font-weight: bold;
+            cursor: pointer;
+        }
+
+        button:hover {
+            filter: brightness(1.12);
+        }
+
+        button:disabled {
+            opacity: 0.6;
+            cursor: wait;
+        }
+
+        .secondary {
+            background: #26344b;
+        }
+
+        .events {
+            display: grid;
+            gap: 12px;
+        }
+
+        .event {
+            background: var(--panel);
+            border: 1px solid var(--border);
+            border-left: 4px solid var(--blue);
+            border-radius: 10px;
+            padding: 17px;
+        }
+
+        .event.CRITICAL { border-left-color: var(--red); }
+        .event.HIGH { border-left-color: var(--orange); }
+        .event.MEDIUM { border-left-color: var(--yellow); }
+        .event.LOW { border-left-color: var(--green); }
+
+        .event-top {
+            display: flex;
+            justify-content: space-between;
+            gap: 12px;
+            flex-wrap: wrap;
+        }
+
+        .event-id {
+            font-weight: bold;
+            overflow-wrap: anywhere;
+        }
+
+        .pill {
+            font-size: 11px;
+            font-weight: bold;
+            padding: 5px 9px;
+            border-radius: 20px;
+            background: #26344b;
+        }
+
+        .event-details {
+            display: grid;
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+            gap: 12px;
+            margin-top: 15px;
+        }
+
+        .detail-label {
+            color: var(--muted);
+            font-size: 12px;
+            margin-bottom: 5px;
+        }
+
+        .detail-value {
+            overflow-wrap: anywhere;
+            font-size: 13px;
+        }
+
+        .description {
+            margin-top: 15px;
+            line-height: 1.5;
+            overflow-wrap: anywhere;
+        }
+
+        .risk-row {
+            display: grid;
+            grid-template-columns: 90px 1fr 35px;
+            gap: 12px;
+            align-items: center;
+            margin: 17px 0;
+            font-size: 13px;
+        }
+
+        .bar {
+            height: 10px;
+            border-radius: 20px;
+            background: #26344b;
+            overflow: hidden;
+        }
+
+        .bar-fill {
+            height: 100%;
+            border-radius: 20px;
+            width: 0;
+        }
+
+        .bar-fill.CRITICAL { background: var(--red); }
+        .bar-fill.HIGH { background: var(--orange); }
+        .bar-fill.MEDIUM { background: var(--yellow); }
+        .bar-fill.LOW { background: var(--green); }
+
+        .form-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 16px;
+        }
+
+        .full {
+            grid-column: 1 / -1;
+        }
+
+        .message {
+            color: var(--muted);
+            font-size: 14px;
+            line-height: 1.5;
+        }
+
+        .error {
+            color: var(--red);
+        }
+
+        .success {
+            color: var(--green);
+        }
+
+        footer {
+            text-align: center;
+            color: var(--muted);
+            padding: 30px 15px;
+            font-size: 12px;
+        }
+
+        @media (max-width: 950px) {
+            .metrics {
+                grid-template-columns: repeat(3, minmax(0, 1fr));
+            }
+        }
+
+        @media (max-width: 650px) {
+            .metrics {
+                grid-template-columns: repeat(2, minmax(0, 1fr));
+            }
+
+            .filters, .form-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .event-details {
+                grid-template-columns: 1fr 1fr;
+            }
+
+            .full {
+                grid-column: auto;
+            }
+        }
+
+        @media (max-width: 380px) {
+            .metrics, .event-details {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <header>
+        <div>
+            <h1>🚘 Vehicle Security Monitor</h1>
+            <p>Cybersecurity Event Monitoring Dashboard</p>
+        </div>
+        <div class="status" id="connectionStatus">● Connecting...</div>
+    </header>
+
+    <main>
+        <div class="section-heading">
+            <h2>Security Overview</h2>
+            <button class="secondary" id="refreshButton">↻ Refresh Events</button>
+        </div>
+
+        <section class="metrics">
+            <div class="metric">
+                <div class="metric-label">Total Events</div>
+                <div class="metric-value" id="totalCount">—</div>
+            </div>
+            <div class="metric">
+                <div class="metric-label">Threats</div>
+                <div class="metric-value critical" id="threatCount">—</div>
+            </div>
+            <div class="metric">
+                <div class="metric-label">Critical</div>
+                <div class="metric-value critical" id="criticalCount">—</div>
+            </div>
+            <div class="metric">
+                <div class="metric-label">High</div>
+                <div class="metric-value high" id="highCount">—</div>
+            </div>
+            <div class="metric">
+                <div class="metric-label">Medium / Low</div>
+                <div class="metric-value" id="otherCount">—</div>
+            </div>
+        </section>
+
+        <div class="section-heading">
+            <h2>Event Filters</h2>
+        </div>
+
+        <section class="panel">
+            <div class="filters">
+                <div>
+                    <label for="vehicleFilter">Vehicle</label>
+                    <select id="vehicleFilter">
+                        <option value="All">All vehicles</option>
+                    </select>
+                </div>
+                <div>
+                    <label for="severityFilter">Severity</label>
+                    <select id="severityFilter">
+                        <option value="All">All severities</option>
+                        <option>CRITICAL</option>
+                        <option>HIGH</option>
+                        <option>MEDIUM</option>
+                        <option>LOW</option>
+                    </select>
+                </div>
+                <button class="secondary" id="clearFilters">Clear Filters</button>
+            </div>
+        </section>
+
+        <div class="section-heading">
+            <h2>Risk Distribution</h2>
+        </div>
+
+        <section class="panel" id="riskDistribution"></section>
+
+        <div class="section-heading">
+            <h2>Security Events</h2>
+            <span class="message" id="eventCountLabel">0 events</span>
+        </div>
+
+        <section class="events" id="eventsList">
+            <div class="panel message">Loading security events...</div>
+        </section>
+
+        <div class="section-heading">
+            <h2>Submit a Security Event</h2>
+        </div>
+
+        <section class="panel">
+            <form id="eventForm" class="form-grid">
+                <div>
+                    <label for="vehicleId">Vehicle ID</label>
+                    <input id="vehicleId" value="VSM-001" required>
+                </div>
+
+                <div>
+                    <label for="eventType">Event Type</label>
+                    <select id="eventType" required>
+                        <option>DOOR_OPEN</option>
+                        <option>IGNITION_ATTEMPT</option>
+                        <option>UNLOCK_ATTEMPT</option>
+                        <option>MOTION_DETECTED</option>
+                        <option selected>TAMPER_DETECTED</option>
+                        <option>BATTERY_ANOMALY</option>
+                    </select>
+                </div>
+
+                <div>
+                    <label for="severity">Severity</label>
+                    <select id="severity" required>
+                        <option>LOW</option>
+                        <option>MEDIUM</option>
+                        <option>HIGH</option>
+                        <option selected>CRITICAL</option>
+                    </select>
+                </div>
+
+                <div>
+                    <label for="source">Source</label>
+                    <input id="source" value="web_dashboard" required>
+                </div>
+
+                <div class="full">
+                    <label for="description">Description</label>
+                    <textarea id="description" required>Test security event submitted from the web dashboard.</textarea>
+                </div>
+
+                <div class="full">
+                    <button type="submit" id="submitButton">Submit Event</button>
+                    <p id="formMessage" class="message" role="status"></p>
+                </div>
+            </form>
+        </section>
+    </main>
+
+    <footer>
+        Vehicle Security Monitor · Connected to the Render API
+    </footer>
+
+    <script>
+        const API_URL = "https://vehicle-security-monitor.onrender.com";
+
+        const eventsList = document.getElementById("eventsList");
+        const statusElement = document.getElementById("connectionStatus");
+        const refreshButton = document.getElementById("refreshButton");
+        const submitButton = document.getElementById("submitButton");
+
+        let allEvents = [];
+
+        // API returns SQLite rows as arrays:
+        // [event_id, vehicle_id, event_type, timestamp, source, severity, description]
+        function normalizeEvent(row) {
+            if (Array.isArray(row)) {
+                return {
+                    event_id: row[0],
+                    vehicle_id: row[1],
+                    event_type: row[2],
+                    timestamp: row[3],
+                    source: row[4],
+                    severity: row[5],
+                    description: row[6]
+                };
+            }
+
+            return row;
+        }
+
+        function setText(id, value) {
+            document.getElementById(id).textContent = value;
+        }
+
+        function makeDetail(label, value) {
+            const wrapper = document.createElement("div");
+
+            const labelElement = document.createElement("div");
+            labelElement.className = "detail-label";
+            labelElement.textContent = label;
+
+            const valueElement = document.createElement("div");
+            valueElement.className = "detail-value";
+            valueElement.textContent = value ?? "—";
+
+            wrapper.append(labelElement, valueElement);
+            return wrapper;
+        }
+
+        function updateMetrics(events) {
+            const count = severity =>
+                events.filter(event => event.severity === severity).length;
+
+            const critical = count("CRITICAL");
+            const high = count("HIGH");
+            const medium = count("MEDIUM");
+            const low = count("LOW");
+
+            setText("totalCount", events.length);
+            setText("threatCount", critical + high);
+            setText("criticalCount", critical);
+            setText("highCount", high);
+            setText("otherCount", medium + low);
+
+            const distribution = document.getElementById("riskDistribution");
+            distribution.replaceChildren();
+
+            ["CRITICAL", "HIGH", "MEDIUM", "LOW"].forEach(severity => {
+                const value = count(severity);
+                const percentage = events.length
+                    ? (value / events.length) * 100
+                    : 0;
+
+                const row = document.createElement("div");
+                row.className = "risk-row";
+
+                const name = document.createElement("strong");
+                name.textContent = severity;
+
+                const bar = document.createElement("div");
+                bar.className = "bar";
+
+                const fill = document.createElement("div");
+                fill.className = `bar-fill ${severity}`;
+                fill.style.width = `${percentage}%`;
+                bar.appendChild(fill);
+
+                const number = document.createElement("span");
+                number.textContent = value;
+
+                row.append(name, bar, number);
+                distribution.appendChild(row);
+            });
+        }
+
+        function updateVehicleFilter(events) {
+            const select = document.getElementById("vehicleFilter");
+            const previousValue = select.value;
+
+            select.replaceChildren();
+
+            const allOption = document.createElement("option");
+            allOption.value = "All";
+            allOption.textContent = "All vehicles";
+            select.appendChild(allOption);
+
+            const vehicles = [...new Set(
+                events.map(event => event.vehicle_id).filter(Boolean)
+            )].sort();
+
+            vehicles.forEach(vehicle => {
+                const option = document.createElement("option");
+                option.value = vehicle;
+                option.textContent = vehicle;
+                select.appendChild(option);
+            });
+
+            select.value = vehicles.includes(previousValue)
+                ? previousValue
+                : "All";
+        }
+
+        function renderEvents() {
+            const vehicle = document.getElementById("vehicleFilter").value;
+            const severity = document.getElementById("severityFilter").value;
+
+            const filtered = allEvents.filter(event =>
+                (vehicle === "All" || event.vehicle_id === vehicle) &&
+                (severity === "All" || event.severity === severity)
+            );
+
+            setText(
+                "eventCountLabel",
+                `${filtered.length} of ${allEvents.length} events`
+            );
+
+            eventsList.replaceChildren();
+
+            if (filtered.length === 0) {
+                const empty = document.createElement("div");
+                empty.className = "panel message";
+                empty.textContent = allEvents.length
+                    ? "No events match the selected filters."
+                    : "No security events have been recorded yet.";
+                eventsList.appendChild(empty);
+                return;
+            }
+
+            filtered.forEach(event => {
+                const card = document.createElement("article");
+                card.className = `event ${event.severity || ""}`;
+
+                const top = document.createElement("div");
+                top.className = "event-top";
+
+                const id = document.createElement("div");
+                id.className = "event-id";
+                id.textContent = event.event_id || "Unknown event";
+
+                const badge = document.createElement("span");
+                badge.className = "pill";
+                badge.textContent = event.severity || "UNKNOWN";
+
+                top.append(id, badge);
+
+                const details = document.createElement("div");
+                details.className = "event-details";
+                details.append(
+                    makeDetail("Vehicle", event.vehicle_id),
+                    makeDetail("Event Type", event.event_type),
+                    makeDetail("Source", event.source),
+                    makeDetail("Timestamp", event.timestamp),
+                    makeDetail("Severity", event.severity)
+                );
+
+                const description = document.createElement("div");
+                description.className = "description";
+                description.textContent = event.description || "No description";
+
+                card.append(top, details, description);
+                eventsList.appendChild(card);
+            });
+        }
+
+        async function loadEvents() {
+            refreshButton.disabled = true;
+            statusElement.textContent = "● Connecting...";
+
+            try {
+                const response = await fetch(`${API_URL}/events`);
+
+                if (!response.ok) {
+                    throw new Error(`API returned HTTP ${response.status}`);
+                }
+
+                const data = await response.json();
+
+                if (!Array.isArray(data.events)) {
+                    throw new Error("Unexpected response from API");
+                }
+
+                allEvents = data.events.map(normalizeEvent);
+
+                updateVehicleFilter(allEvents);
+                updateMetrics(allEvents);
+                renderEvents();
+
+                statusElement.textContent = "● API Connected";
+                statusElement.style.background = "#12382f";
+                statusElement.style.color = "#34d399";
+            } catch (error) {
+                statusElement.textContent = "● API Unavailable";
+                statusElement.style.background = "#451a25";
+                statusElement.style.color = "#fb7185";
+
+                eventsList.replaceChildren();
+
+                const message = document.createElement("div");
+                message.className = "panel message error";
+                message.textContent =
+                    `Could not load events: ${error.message}. ` +
+                    "Check the API deployment and CORS configuration.";
+
+                eventsList.appendChild(message);
+            } finally {
+                refreshButton.disabled = false;
+            }
+        }
+
+        document.getElementById("vehicleFilter")
+            .addEventListener("change", renderEvents);
+
+        document.getElementById("severityFilter")
+            .addEventListener("change", renderEvents);
+
+        document.getElementById("clearFilters")
+            .addEventListener("click", () => {
+                document.getElementById("vehicleFilter").value = "All";
+                document.getElementById("severityFilter").value = "All";
+                renderEvents();
+            });
+
+        refreshButton.addEventListener("click", loadEvents);
+
+        document.getElementById("eventForm")
+            .addEventListener("submit", async event => {
+                event.preventDefault();
+
+                submitButton.disabled = true;
+                const message = document.getElementById("formMessage");
+                message.className = "message";
+                message.textContent = "Submitting event...";
+
+                const payload = {
+                    event_id: `EVT-${Date.now()}`,
+                    vehicle_id: document.getElementById("vehicleId").value.trim(),
+                    event_type: document.getElementById("eventType").value,
+                    timestamp: new Date().toISOString(),
+                    source: document.getElementById("source").value.trim(),
+                    severity: document.getElementById("severity").value,
+                    description: document.getElementById("description").value.trim()
+                };
+
+                try {
+                    const response = await fetch(`${API_URL}/events`, {
+                        method: "POST",
+                        headers: {
+                            "Content-Type": "application/json"
+                        },
+                        body: JSON.stringify(payload)
+                    });
+
+                    const result = await response.json();
+
+                    if (!response.ok) {
+                        throw new Error(
+                            result.detail
+                                ? JSON.stringify(result.detail)
+                                : `API returned HTTP ${response.status}`
+                        );
+                    }
+
+                    message.className = "message success";
+                    message.textContent =
+                        `Event ${result.event_id} submitted successfully.`;
+
+                    await loadEvents();
+                } catch (error) {
+                    message.className = "message error";
+                    message.textContent =
+                        `Submission failed: ${error.message}`;
+                } finally {
+                    submitButton.disabled = false;
+                }
+            });
+
+        loadEvents();
+    </script>
+</body>
+</html>
